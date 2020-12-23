@@ -302,6 +302,8 @@ bool pause_check = true;
 
 bool pub_total_mode = false;
 
+bool dis_check = false;
+
 //bool for custom applied force 
 bool custom_ft_applied = false;
 
@@ -343,5 +345,6 @@ void state_publisher_init();
 void state_publisher();
 void mujoco_ros_connector_init();
 void mycontroller(const mjModel *m, mjData *d);
+void makeArrow(mjvGeom* arrow);
 
 #endif

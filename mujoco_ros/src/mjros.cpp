@@ -118,6 +118,14 @@ void sim_command_callback(const std_msgs::StringConstPtr &msg)
         //c_slowmotion();
         std::cout << "SIM slowmotion by msg" << std::endl;
     }
+    else if (msg->data == "DIST")
+    {
+        dis_check = true;
+    }
+    else if (msg->data == "NONE")
+    {
+        dis_check = false;
+    }
 }
 void rosPollEvents()
 {
@@ -399,7 +407,6 @@ void mycontroller(const mjModel *m, mjData *d)
                 std::cout << "command torque " << std::endl;
                 for (int i = 0; i < m->nu; i++)
                 {
-
                     std::cout << command[i] << std::endl;
                 }
             }
@@ -415,6 +422,24 @@ void mycontroller(const mjModel *m, mjData *d)
             }
 
             t_before = rt_now;
+
+            if(dis_check == true)
+            {
+                mjrRect rect = uistate.rect[3];
+                ctrl_command2[6] = 230;
+                mjvGeom* arrow = scn.geoms + scn.ngeom;
+                makeArrow(arrow);
+                scn.ngeom++;
+                arrow->size[0] = abs(ctrl_command2[6]) * 0.01;
+                mjtNum mat[9];
+                mjtNum quat[4] = {0.0, 0.0, 0.0, 1.0};
+                mjtNum axis[3] = {0.0, 0.0, 1.0};
+                
+                mju_axisAngle2Quat(quat, axis, 0.0);
+                mju_quat2Mat(mat, quat);
+                mju_copy(d->xfrc_applied, ctrl_command2, m->nbody * 6);
+               // mjr_render(rect, &scn, &con);
+            }
         }
     }
     //ros::V_string temp;
@@ -1866,6 +1891,26 @@ void render(GLFWwindow *window)
         return;
     }
 
+    if(dis_check == true)
+    {
+                mjvGeom* arrow = scn.geoms + scn.ngeom;
+                makeArrow(arrow);
+                scn.ngeom++;
+                arrow->pos[0] = m->body_pos[0] + m->body_pos[3]+ m->body_pos[6]+1.3;
+                arrow->pos[1] = m->body_pos[1] + m->body_pos[4]+ m->body_pos[7] - 0.1;
+                arrow->pos[2] = 0.9;
+                arrow->size[0] = 0.05;
+                arrow->size[1] = 0.05;
+                arrow->size[2] = 3;
+                mjtNum mat[9];
+                mjtNum quat[4];// = {0.0, 0.0, 0.0, 1.0};
+                mjtNum axis[3] = {0.0, 1.0, 0.0};
+                
+                mju_axisAngle2Quat(quat, axis, 1.570+3.14);
+                mju_quat2Mat(mat, quat);
+                mju_n2f(arrow->mat, mat, 9);
+    }
+
     // render scene
     mjr_render(rect, &scn, &con);
 
@@ -1898,6 +1943,7 @@ void render(GLFWwindow *window)
         profilershow(rect);
 
     // show sensor
+
     if (settings.sensor)
         sensorshow(smallrect);
 
@@ -1935,6 +1981,7 @@ void render(GLFWwindow *window)
                    radd * euler(0), radd * euler(1), radd * euler(2));
         }
     }
+
     // finalize
     glfwSwapBuffers(window);
 }
@@ -2022,7 +2069,6 @@ void simulate(void)
             {
                 // apply pose perturbation
                 mjv_applyPerturbPose(m, d, &pert, 1); // move mocap and dynamic bodies
-
                 // run mj_forward, to update rendering and joint sliders
                 mj_forward(m, d);
             }
@@ -2124,4 +2170,32 @@ void init(std::string key_file)
     mjui_add(&ui1, defWatch);
     uiModify(window, &ui0, &uistate, &con);
     uiModify(window, &ui1, &uistate, &con);
+}
+
+void makeArrow(mjvGeom* arrow)
+{
+	arrow->type = mjGEOM_ARROW;
+	arrow->dataid = -1;
+	arrow->objtype = mjOBJ_SITE;
+	arrow->objid = -1;
+	arrow->category = mjCAT_DECOR;
+	arrow->texid = -1;
+	arrow->texuniform = 0;
+	arrow->texrepeat[0] = 1;
+	arrow->texrepeat[1] = 1;
+	arrow->emission = 0;
+	arrow->specular = 0.5;
+	arrow->shininess = 0.5;
+	arrow->reflectance = 0;
+	arrow->label[0] = 0;
+	arrow->size[0] = 0.02f;
+	arrow->size[1] = 0.02f;
+	arrow->size[2] = 1.0f;
+	arrow->rgba[0] = 1.0f;
+	arrow->rgba[1] = 0.1f;
+	arrow->rgba[2] = 0.1f;
+	arrow->rgba[3] = 1.0f;
+	arrow->pos[0] = 0.0f;
+	arrow->pos[1] = 0.0f;
+	arrow->pos[2] = 0.5f;
 }
